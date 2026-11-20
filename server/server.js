@@ -28,7 +28,7 @@ console.log('=====================');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
-
+const ADMIN_PASSWORD = "SuperSecretAdminPassword123!";
 // CORS Configuration
 const allowedOrigins = isProduction
   ? [
