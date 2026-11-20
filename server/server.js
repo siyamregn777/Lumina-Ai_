@@ -128,7 +128,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
     // Use provided URLs or construct from baseUrl
     const finalSuccessUrl = successUrl || `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}`;
     const finalCancelUrl = cancelUrl || `${baseUrl}/pricing`;
