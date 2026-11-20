@@ -12,7 +12,7 @@ import LoginPage from './src/pages/LoginPage';
 import RegisterPage from './src/pages/RegisterPage';
 import Dashboard from './src/pages/Dashboard';
 import AdminPanel from './src/pages/AdminPanel';
-import { User, UserRole, SubscriptionPlan } from './src/types/types';
+import { User, UserRole, SubscriptionPlan, BillingCycle, PlanStatus } from './src/types/types';
 import { supabase } from './src/lib/supabase';
 import CheckoutPage from './src/pages/CheckoutPage';
 import DashboardOverview from './src/components/dashboard/DashboardOverview';
@@ -23,6 +23,7 @@ import ReportsPage from './src/components/dashboard/ReportsPage';
 import BillingSettings from './src/components/dashboard/BillingSettings';
 import SubscriptionAccount from './src/components/dashboard/SubscriptionAccount';
 import TestCheckout from './src/pages/TestCheckout';
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,12 +49,36 @@ const App: React.FC = () => {
   }, []);
 
   const mapSupabaseUser = (sbUser: any) => {
+    const meta = sbUser.user_metadata || {};
+    const plan = meta.subscription || SubscriptionPlan.FREE;
+
     setUser({
       id: sbUser.id,
       email: sbUser.email || '',
-      name: sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0],
-      role: sbUser.user_metadata?.role || UserRole.USER,
-      subscription: sbUser.user_metadata?.subscription || SubscriptionPlan.FREE,
+      name: meta.full_name || sbUser.email?.split('@')[0] || 'User',
+      role: meta.role || UserRole.USER,
+      subscription: plan,
+      billingCycle: meta.billingCycle || BillingCycle.MONTHLY,
+      planStatus: meta.planStatus || PlanStatus.ACTIVE,
+      credits: meta.credits ?? (plan === SubscriptionPlan.FREE ? 10 : 1000),
+      maxCredits: meta.maxCredits ?? (plan === SubscriptionPlan.FREE ? 10 : 1000),
+      usage: {
+        aiQueries: meta.usage?.aiQueries ?? 0,
+        documentsUploaded: meta.usage?.documentsUploaded ?? 0,
+        storageUsed: meta.usage?.storageUsed ?? 0,
+        apiCalls: meta.usage?.apiCalls ?? 0,
+        teamMembers: meta.usage?.teamMembers ?? 0,
+      },
+      features: {
+        hasAdvancedAnalytics: meta.features?.hasAdvancedAnalytics ?? false,
+        hasPrioritySupport: meta.features?.hasPrioritySupport ?? false,
+        hasCustomBranding: meta.features?.hasCustomBranding ?? false,
+        hasAPIAccess: meta.features?.hasAPIAccess ?? false,
+        hasSSO: meta.features?.hasSSO ?? false,
+        hasOnPremise: meta.features?.hasOnPremise ?? false,
+        hasCustomModels: meta.features?.hasCustomModels ?? false,
+        hasSLA: meta.features?.hasSLA ?? false,
+      },
     });
   };
 
@@ -76,7 +101,6 @@ const App: React.FC = () => {
         <Navbar user={user} onLogout={handleLogout} />
         <main className="flex-grow">
           <Routes>
-          
             <Route path="/" element={<HomePage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
@@ -87,6 +111,7 @@ const App: React.FC = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/checkout" element={user ? <CheckoutPage /> : <Navigate to="/login" />} />
             <Route path="/test-checkout" element={<TestCheckout />} />
+            
             {/* Dashboard with nested routes */}
             <Route 
               path="/dashboard" 
@@ -99,7 +124,6 @@ const App: React.FC = () => {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="billing" element={<BillingSettings user={user} />} />
               <Route path="subscription" element={<SubscriptionAccount user={user} />} />
-
             </Route>
             
             <Route 
@@ -107,6 +131,7 @@ const App: React.FC = () => {
               element={user?.role === UserRole.ADMIN ? <AdminPanel /> : <Navigate to="/" />} 
             />
           </Routes>
+          
           <button 
             onClick={() => {
               console.log('=== DIAGNOSTICS ===');
@@ -120,7 +145,7 @@ const App: React.FC = () => {
                 .then(data => console.log('Backend Health:', data))
                 .catch(err => console.error('Backend Error:', err));
             }}
-            className="fixed bottom-4 right-4 bg-gray-800 text-white p-2 rounded text-xs"
+            className="fixed bottom-4 right-4 bg-gray-800 text-white p-2 rounded text-xs z-50"
           >
             🔧 Diagnostics
           </button>
