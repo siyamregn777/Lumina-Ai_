@@ -28,7 +28,6 @@ console.log('=====================');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
-
 // CORS Configuration
 const allowedOrigins = isProduction
   ? [
